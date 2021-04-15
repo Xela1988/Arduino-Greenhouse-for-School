@@ -16,13 +16,25 @@ int valueFoto;
 float valueTmpAir = 0.0;
 float valueHumAir = 0.0;
 float valueHumSoil = 0.0;
-// photoresistor transducers
+// photoresistor transducers GL5516
 const int fotoResistor = A0;
-//soil humidity transducer
+//soil humidity transducer LM393
 const int sensore_umidita_terreno = A1;
-//humidity and air temperature transducer
+//humidity and air temperature transducer DHT11
 const int sensore_d11 = 2;
 const int DHTTYPE = DHT11;
+// button for showing values on lcd
+const int button_values = A2;
+
+// text constant
+const String testoValGl5516 = "Il valore proveniente dal fotoresistore GL5516 per i LUX  è ";
+const String testoValDht11 = "I valori proveniente dal DHT11 sono ";
+const String testoValDht11Hum = "per l'umidità ";
+const String testoValDht11Tem = "e per la temperatura ";
+const String testoValLm393 = "Il valore proveniente dal LM393 per l'umidità del terreno è ";
+const String testoHumDHT11 = "";
+const String testoTempDHT11 = "Il valore proveniente dal LM393 per l'umidità del terreno è ";
+
 
 DHT dht(sensore_d11, DHTTYPE);
 //#define DHT11_PIN 2
@@ -40,6 +52,11 @@ float baselineHumAir = 0.0;
 int baselineFoto = 0;
 // number for compare humidity soil
 float baselineHumSoil = 0.0;
+
+// state for managed visualization values on lcd
+boolean newState = LOW;
+boolean oldState = LOW;
+byte state = 0;
 
 void setup() {
   // set up the LCD's number of columns and rows:
@@ -62,27 +79,27 @@ void setup() {
 // method for calculate temperature and humidity from Air here the used library dht
 void calcoloTmpAndHumAir() {
   // read values from sensor for temperature
-  // valueTmpAir = dht.readTemperature;
-  // valueHumAir = dht.readHumidity;
-  float valueHumAir = dht.readHumidity();
-  float t = dht.readTemperature();
-  float f = dht.readTemperature(true);
+   valueTmpAir = dht.readTemperature();
+   valueHumAir = dht.readHumidity();
+ // float valueHumAir = dht.readHumidity();
+//  float t = dht.readTemperature();
+float checkTemp = dht.readTemperature(true);
 
-  if (isnan(valueHumAir) || isnan(t) || isnan(f)) {
+  if (isnan(valueHumAir) || isnan(valueTmpAir) || isnan(checkTemp)) {
     Serial.println("Failed to read from DHT sensor!");
     return;
   }
 
-  float hif = dht.computeHeatIndex(f, valueHumAir);
-  float hic = dht.computeHeatIndex(t, valueHumAir, false);
+  float hif = dht.computeHeatIndex(checkTemp, valueHumAir);
+  float hic = dht.computeHeatIndex(valueTmpAir, valueHumAir, false);
    
-  // test per vedere a monitor il valueFoto
-  Serial.println(valueHumAir);
- Serial.println(t);
+  // Monitoring values from DHT11 Humidity and Temperature
+ Serial.println(valueHumAir);
+ Serial.println(valueTmpAir);
   
   lcd.setCursor(0, 0);
   lcd.print("Temp: ");
-  lcd.print(t);
+  lcd.print(valueTmpAir);
   lcd.print((char)223);
   lcd.print("C");
   lcd.setCursor(0, 1);
@@ -91,33 +108,33 @@ void calcoloTmpAndHumAir() {
   lcd.print("%");
   // test per i led
   //if che dichiara che il valore di temperatura è minore di quello base
-  if (t <= baselineTmpAir) {
+  if (valueTmpAir <= baselineTmpAir) {
     digitalWrite(ledFreddo, LOW);
     digitalWrite(ledMedio, LOW);
     digitalWrite(ledCaldo, LOW);
   }
   //
-  if (t <= baselineTmpAir + 20) {
+  if (valueTmpAir <= baselineTmpAir + 20) {
     digitalWrite(ledFreddo, HIGH);
     digitalWrite(ledMedio, LOW);
     digitalWrite(ledCaldo, LOW);
   }
-  if (t >= baselineTmpAir + 21 && t <= baselineTmpAir + 30) {
+  if (valueTmpAir >= baselineTmpAir + 21 && valueTmpAir <= baselineTmpAir + 30) {
     digitalWrite(ledFreddo, LOW);
     digitalWrite(ledMedio, HIGH);
     digitalWrite(ledCaldo, LOW);
   }
-  if (t >= baselineTmpAir + 31 && t < baselineTmpAir + 50) {
+  if (valueTmpAir >= baselineTmpAir + 31 && valueTmpAir < baselineTmpAir + 50) {
     digitalWrite(ledFreddo, LOW);
     digitalWrite(ledMedio, LOW);
     digitalWrite(ledCaldo, HIGH);
   }
-  if (t >= baselineTmpAir + 51) {
+  if (valueTmpAir >= baselineTmpAir + 51) {
     digitalWrite(ledFreddo, HIGH);
     digitalWrite(ledMedio, HIGH);
     digitalWrite(ledCaldo, HIGH);
   }
-  delay(1000);
+//  delay(1000);
 
 }
 //method for used photoresistor here used analogRead for read from simple transductor
@@ -129,7 +146,7 @@ void calcoloLux() {
   lcd.print("Lux:");
   lcd.print(valueFoto);
   // test per vedere a monitor il valueFoto
-  Serial.println(valueFoto);
+  Serial.println(testoValGl5516 + valueFoto + " LUX");
   //test per led che si deve accendere per valore dal fotoresistore
   if (valueFoto < baselineFoto || valueFoto <= baselineFoto + 299) {
     digitalWrite(ledFotoresistore, HIGH);
@@ -147,19 +164,50 @@ void calcoloLux() {
 }
 //method for read values from simple humidity transductor
 void calcoloHumSoil() {
-  int sensorValue = analogRead(sensore_umidita_terreno); //Legge il valore analogico
-Serial.println(sensorValue); //Stampa a schermo il valore
+   //Legge il valore analogico
+  int sensorValue = analogRead(sensore_umidita_terreno);
+   //Stampa a schermo il valore
+  Serial.println(testoValLm393 + sensorValue);
   lcd.setCursor(0, 0);
   lcd.print("Ground Hum:");
   lcd.print(sensorValue);
-delay(2000); //Attende due secondi
+//delay(2000); //Attende due secondi
 }
 void loop() {
  // calcoloTmpAndHumAir();
  // calcoloLux();
 //  calcoloHumSoil();
-  delay(1000);
-  lcd.clear();
+//  delay(1000);
+//  lcd.clear();
+
+ newState = analogRead(button_values);
+  if ( newState != oldState )
+  {
+    if ( newState == HIGH )
+    {
+    Serial.print("Lo stato è ");
+    Serial.print(state);
+      Serial.print(".");
+      state++;
+      if (state > 3) {
+        state = 1;
+      }
+      
+      if (state == 1) {
+        lcd.clear();
+        calcoloHumSoil();   // IN QUESTO METODO NON METTERE DELAY. QUELLO CHE DEVI FARE E' COME DA ESEMPIO SOTTO
+      }
+      else if (state == 2) {
+        lcd.clear();
+        calcoloLux();      // IN QUESTO METODO NON METTERE DELAY. QUELLO CHE DEVI FARE E' COME DA ESEMPIO SOTTO
+      }
+      else if (state == 3) {
+        lcd.clear();
+        calcoloTmpAndHumAir();  // IN QUESTO METODO NON METTERE DELAY. QUELLO CHE DEVI FARE E' COME DA ESEMPIO SOTTO
+      }
+    }
+    oldState = newState;
+  }
 
   // set the cursor to column 0, line 1
   // (note: line 1 is the second row, since counting begins with 0):
