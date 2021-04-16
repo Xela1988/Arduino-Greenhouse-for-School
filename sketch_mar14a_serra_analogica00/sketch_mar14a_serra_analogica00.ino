@@ -2,7 +2,7 @@
   LiquidCrystal Library - Sensor Air Temperature and Humidity - Sensor Soil Humidity - Photoresistor
 
 */
-// LiquidCrystal I2C - Version: Latest 
+// LiquidCrystal I2C - Version: Latest
 #include <LiquidCrystal_I2C.h>
 
 // DHT sensor library - Version: Latest
@@ -26,15 +26,17 @@ const int DHTTYPE = DHT11;
 // button for showing values on lcd
 const int button_values = A2;
 
-// text constant
+// text constant for print on lcd or serial monitor of Ide
 const String testoValGl5516 = "Il valore proveniente dal fotoresistore GL5516 per i LUX  è ";
 const String testoValDht11 = "I valori proveniente dal DHT11 sono ";
 const String testoValDht11Hum = "per l'umidità ";
 const String testoValDht11Tem = "e per la temperatura ";
 const String testoValLm393 = "Il valore proveniente dal LM393 per l'umidità del terreno è ";
-const String testoHumDHT11 = "";
-const String testoTempDHT11 = "Il valore proveniente dal LM393 per l'umidità del terreno è ";
-
+const String testoHumDHT11 = "L'umidità dell'ambiente proveniente dal DHT11 è ";
+const String testoTempDHT11 = "La temperatura dell'ambiente proveniente dal DHT11 è ";
+const String lcdPrintDHT11Temp = "Temp: ";
+const String lcdPrintC = "C";
+const String lcdPrintDHT11Hum = "Humidity: ";
 
 DHT dht(sensore_d11, DHTTYPE);
 //#define DHT11_PIN 2
@@ -60,11 +62,11 @@ byte state = 0;
 
 void setup() {
   // set up the LCD's number of columns and rows:
- //lcd.begin(16, 2);
- lcd.init();
- lcd.backlight();
+  //lcd.begin(16, 2);
+  lcd.init();
+  lcd.backlight();
   dht.begin();
-    Serial.begin(9600);
+  Serial.begin(9600);
   // here I take the values from sensors for temperature and light
   pinMode(fotoResistor, INPUT);
   pinMode(sensore_umidita_terreno, INPUT);
@@ -79,11 +81,11 @@ void setup() {
 // method for calculate temperature and humidity from Air here the used library dht
 void calcoloTmpAndHumAir() {
   // read values from sensor for temperature
-   valueTmpAir = dht.readTemperature();
-   valueHumAir = dht.readHumidity();
- // float valueHumAir = dht.readHumidity();
-//  float t = dht.readTemperature();
-float checkTemp = dht.readTemperature(true);
+  valueTmpAir = dht.readTemperature();
+  valueHumAir = dht.readHumidity();
+  // float valueHumAir = dht.readHumidity();
+  //  float t = dht.readTemperature();
+  float checkTemp = dht.readTemperature(true);
 
   if (isnan(valueHumAir) || isnan(valueTmpAir) || isnan(checkTemp)) {
     Serial.println("Failed to read from DHT sensor!");
@@ -92,11 +94,11 @@ float checkTemp = dht.readTemperature(true);
 
   float hif = dht.computeHeatIndex(checkTemp, valueHumAir);
   float hic = dht.computeHeatIndex(valueTmpAir, valueHumAir, false);
-   
+
   // Monitoring values from DHT11 Humidity and Temperature
- Serial.println(valueHumAir);
- Serial.println(valueTmpAir);
-  
+  Serial.println(valueHumAir);
+  Serial.println(valueTmpAir);
+
   lcd.setCursor(0, 0);
   lcd.print("Temp: ");
   lcd.print(valueTmpAir);
@@ -113,7 +115,6 @@ float checkTemp = dht.readTemperature(true);
     digitalWrite(ledMedio, LOW);
     digitalWrite(ledCaldo, LOW);
   }
-  //
   if (valueTmpAir <= baselineTmpAir + 20) {
     digitalWrite(ledFreddo, HIGH);
     digitalWrite(ledMedio, LOW);
@@ -134,8 +135,6 @@ float checkTemp = dht.readTemperature(true);
     digitalWrite(ledMedio, HIGH);
     digitalWrite(ledCaldo, HIGH);
   }
-//  delay(1000);
-
 }
 //method for used photoresistor here used analogRead for read from simple transductor
 void calcoloLux() {
@@ -162,56 +161,100 @@ void calcoloLux() {
     digitalWrite(ledFotoresistore, HIGH);
   }
 }
-//method for read values from simple humidity transductor
+//method for read values from simple ground humidity transductor LM393
 void calcoloHumSoil() {
-   //Legge il valore analogico
+  turnOffLedDHT11();
+  //Legge il valore analogico
   int sensorValue = analogRead(sensore_umidita_terreno);
-   //Stampa a schermo il valore
+  //Stampa a schermo il valore
   Serial.println(testoValLm393 + sensorValue);
   lcd.setCursor(0, 0);
   lcd.print("Ground Hum:");
   lcd.print(sensorValue);
-//delay(2000); //Attende due secondi
 }
-void loop() {
- // calcoloTmpAndHumAir();
- // calcoloLux();
-//  calcoloHumSoil();
-//  delay(1000);
-//  lcd.clear();
 
- newState = analogRead(button_values);
+//beginning method for user instruction
+void welcome() {
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Tenere");
+  lcd.setCursor(0, 1);
+  lcd.print("premuto");
+  delay(2000);
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("il pulsante");
+  lcd.setCursor(0, 1);
+  lcd.print("per");
+  delay(2000);
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("visualizzare");
+  lcd.setCursor(0, 1);
+  lcd.print("i valori");
+  delay(2000);
+}
+// method for closed light from led of the DHT11
+void turnOffLedDHT11() {
+  digitalWrite(ledFreddo, LOW);
+  digitalWrite(ledMedio, LOW);
+  digitalWrite(ledCaldo, LOW);
+}
+
+void loop() {
+  newState = analogRead(button_values);
   if ( newState != oldState )
   {
     if ( newState == HIGH )
     {
-    Serial.print("Lo stato è ");
-    Serial.print(state);
+      Serial.print("Lo stato è ");
+      Serial.print(state);
       Serial.print(".");
+
       state++;
       if (state > 3) {
         state = 1;
+        lcd.clear();
       }
-      
+
       if (state == 1) {
         lcd.clear();
-        calcoloHumSoil();   // IN QUESTO METODO NON METTERE DELAY. QUELLO CHE DEVI FARE E' COME DA ESEMPIO SOTTO
+        calcoloHumSoil();   
       }
       else if (state == 2) {
         lcd.clear();
-        calcoloLux();      // IN QUESTO METODO NON METTERE DELAY. QUELLO CHE DEVI FARE E' COME DA ESEMPIO SOTTO
+        calcoloLux();     
       }
       else if (state == 3) {
         lcd.clear();
-        calcoloTmpAndHumAir();  // IN QUESTO METODO NON METTERE DELAY. QUELLO CHE DEVI FARE E' COME DA ESEMPIO SOTTO
+        calcoloTmpAndHumAir(); 
       }
     }
     oldState = newState;
   }
+  else {
+    if (state == 0)
+    {
+      welcome();
+    }
 
-  // set the cursor to column 0, line 1
-  // (note: line 1 is the second row, since counting begins with 0):
-  //  lcd.setCursor(0, 1);
-  //  print the number of seconds since reset:
-  //  lcd.print(millis() / 1000);
+    if (state > 3) {
+      state = 1;
+    }
+    if (state == 1) {
+      calcoloHumSoil();   
+    }
+    else if (state == 2) {
+      calcoloLux();      
+    }
+    else if (state == 3) {
+      calcoloTmpAndHumAir();  
+    }
+
+    // set the cursor to column 0, line 1
+    // (note: line 1 is the second row, since counting begins with 0):
+    //  lcd.setCursor(0, 1);
+    //  print the number of seconds since reset:
+    //  lcd.print(millis() / 1000);
+  }
 }
