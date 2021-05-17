@@ -156,7 +156,7 @@ void calcoloLux() {
   // the sunny day with the the maximum lightness the GL5516 detect the valuesabout 970-1000
   valueFoto = analogRead(fotoResistor);
   //recall method for read the values from button
-  newState = analogRead(button_values);
+  newState = digitalRead(button_values);
   //qui va messa la moltiplicazione per restituire il valore esatto 10K
   lcd.setCursor(0, 0);
   lcd.print(lux);
@@ -196,7 +196,7 @@ void calcoloHumSoil() {
 
 //beginning method for user instruction
 void welcome() {
-  newState = analogRead(button_values);
+  newState = digitalRead(button_values);
   if (newState == LOW) {
     lcd.clear();
     lcd.setCursor(0, 0);
@@ -205,7 +205,7 @@ void welcome() {
     lcd.print(premuto);
     delay(1500);
   }
-  newState = analogRead(button_values);
+  newState = digitalRead(button_values);
   if (newState == LOW) {
     lcd.clear();
     lcd.setCursor(0, 0);
@@ -213,7 +213,7 @@ void welcome() {
     lcd.print(per);
     delay(1500);
   }
-  newState = analogRead(button_values);
+  newState = digitalRead(button_values);
   if (newState == LOW) {
     lcd.clear();
     lcd.setCursor(0, 0);
@@ -232,7 +232,7 @@ void turnOffLedDHT11() {
 }
 
 void loop() {
-  newState = analogRead(button_values);
+  newState = digitalRead(button_values);
   if ( newState != oldState )
   {
     if ( newState == HIGH )
@@ -256,7 +256,7 @@ void loop() {
         calcoloTmpAndHumAir();
       }
     }
-    oldState = newState;
+   oldState = newState;
   } else {
     if (state == 0)
     {
