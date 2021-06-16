@@ -41,6 +41,7 @@ const String lux = "Lux: " ;
 const String luxCapitalize = " LUX";
 // text for print on lcd and serial monitor values from Soil transductor LM393
 const String testoValLM393 = "Il valore proveniente dal LM393 per l'umidità del terreno è ";
+const String testoValLM393Percentage = "e la sua percentuale è ";
 const String lcdPrintLM393Hum = "Ground Hum:";
 const String tenere = "Tenere";
 const String premuto = "premuto";
@@ -49,6 +50,7 @@ const String per = "per";
 const String visualizzare = "visualizzare";
 const String iValori = "i valori";
 const String loStatoE = "Lo stato è ";
+const String percentage = "%";
 
 
 DHT dht(sensore_d11, DHTTYPE);
@@ -120,8 +122,7 @@ void calcoloTmpAndHumAir() {
   lcd.print(lcdPrintC);
   lcd.setCursor(0, 1);
   lcd.print(lcdPrintDHT11Hum);
-  lcd.print(valueHumAir);
-  lcd.print("%");
+  lcd.print(valueHumAir + percentage);
   // led test
   //control if valueTmpAir is less than base temperature
   if (valueTmpAir <= baselineTmpAir) {
@@ -186,12 +187,16 @@ void calcoloHumSoil() {
   turnOffLedDHT11();
   //reading analog value from soil transductor LM393
   int sensorValue = analogRead(sensore_umidita_terreno);
+  //mapping for convert value from transductor in percentage
+  int sensorValuePercentage =  map(sensorValue, 0, 1019, 100, 0);
+   
   //Print in serial monitor
   Serial.println(testoValLM393 + sensorValue);
+  Serial.println(testoValLM393Percentage + sensorValuePercentage + percentage);
   //print on lcd Ground humidity and his value
   lcd.setCursor(0, 0);
   lcd.print(lcdPrintLM393Hum);
-  lcd.print(sensorValue);
+  lcd.print(sensorValuePercentage + percentage);
 }
 
 //beginning method for user instruction
@@ -240,6 +245,7 @@ void loop() {
       Serial.println(loStatoE +state);
       state++;
       if (state > 3) {
+        lcd.clear();
         state = 1;
       }
 
@@ -256,7 +262,7 @@ void loop() {
         calcoloTmpAndHumAir();
       }
     }
-   oldState = newState;
+    oldState = newState;
   } else {
     if (state == 0)
     {
