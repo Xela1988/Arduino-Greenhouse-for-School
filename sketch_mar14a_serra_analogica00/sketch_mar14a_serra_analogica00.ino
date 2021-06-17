@@ -24,6 +24,8 @@ const int sensore_d11 = 2;
 const int DHTTYPE = DHT11;
 // button for showing values on lcd
 const int button_values = A2;
+// string used for clean lcd
+String vecchiaStringa;
 
 // text constant for print on lcd or serial monitor of Ide
 
@@ -156,7 +158,7 @@ void calcoloTmpAndHumAir() {
 void calcoloLux() {
   // the sunny day with the the maximum lightness the GL5516 detect the valuesabout 970-1000
   valueFoto = analogRead(fotoResistor);
-  //recall method for read the values from button
+  //recall method for read the values from button and exit quickly from cycle
   newState = digitalRead(button_values);
   //qui va messa la moltiplicazione per restituire il valore esatto 10K
   lcd.setCursor(0, 0);
@@ -168,10 +170,12 @@ void calcoloLux() {
   if (newState == LOW) {
     if (valueFoto < baselineFoto || valueFoto <= baselineFoto + 400) {
       digitalWrite(ledFotoresistore, HIGH);
-      delay(1000);
+      delay(300);
       digitalWrite(ledFotoresistore, LOW);
     }
     if (valueFoto >= baselineFoto + 401 && valueFoto <= baselineFoto + 599) {
+      digitalWrite(ledFotoresistore, LOW);
+      delay(3000);
       digitalWrite(ledFotoresistore, HIGH);
       delay(3000);
       digitalWrite(ledFotoresistore, LOW);
@@ -193,10 +197,10 @@ void calcoloHumSoil() {
   //Print in serial monitor
   Serial.println(testoValLM393 + sensorValue);
   Serial.println(testoValLM393Percentage + sensorValuePercentage + percentage);
-  //print on lcd Ground humidity and his value
-  lcd.setCursor(0, 0);
-  lcd.print(lcdPrintLM393Hum);
-  lcd.print(sensorValuePercentage + percentage);
+
+  //test per trim on the values percentage
+  String scritta = lcdPrintLM393Hum + sensorValuePercentage + percentage;
+  cleanAndWriteToLCD(scritta);
 }
 
 //beginning method for user instruction
@@ -229,6 +233,24 @@ void welcome() {
   }
 }
 
+// String trimmer for clean on lcd
+void cleanAndWriteToLCD(String nuovaStringa) {
+    lcd.setCursor(0, 0);
+    lcd.print(nuovaStringa);
+    int vecchiaLunghezza = vecchiaStringa.length();
+    int nuovaLunghezza = nuovaStringa.length();
+    if(vecchiaLunghezza > nuovaLunghezza ){
+              for(int i = nuovaLunghezza ; i < 16; i++) {
+              lcd.setCursor(i,0);
+              //empty space
+              lcd.write(32);
+        }
+
+    }
+    vecchiaStringa = nuovaStringa;
+}
+
+
 // method for closed light from led of the DHT11
 void turnOffLedDHT11() {
   digitalWrite(ledFreddo, LOW);
@@ -239,7 +261,7 @@ void turnOffLedDHT11() {
 void loop() {
   newState = digitalRead(button_values);
   if ( newState != oldState )
-  {
+  { 
     if ( newState == HIGH )
     {
       Serial.println(loStatoE +state);
@@ -263,7 +285,7 @@ void loop() {
       }
     }
     oldState = newState;
-  } else {
+  } else {  
     if (state == 0)
     {
       welcome();
